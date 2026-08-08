@@ -1,0 +1,107 @@
+print("v.salman-192525153")
+# Naive Bayes with Missing Values and Laplace Smoothing
+# Hospital Patient Classification
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import CategoricalNB
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+data = {
+    "Fever":    ["Yes", "No", "Yes", "Yes", "No", "No", "Yes", "No",
+                 "Yes", "Yes", "No", "Yes", "No", "Yes", "No"],
+    
+    "Cough":    ["Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No",
+                 "Yes", "Yes", "No", "Yes", "No", "Yes", "No"],
+    
+    "AgeGroup": ["Old", "Young", "Old", "Middle", "Young", "Middle",
+                 "Old", "Young", "Old", "Middle", "Young", "Old",
+                 "Middle", "Old", "Young"],
+    
+    "Disease":  ["Yes", "No", "Yes", "Yes", "No", "No", "Yes", "No",
+                 "Yes", "Yes", "No", "Yes", "No", "Yes", "No"]
+}
+
+df = pd.DataFrame(data)
+
+# Add a missing value for demonstration
+df.loc[5, "Cough"] = None
+
+print("Original Dataset:")
+print(df)
+
+df["Cough"] = df["Cough"].fillna(df["Cough"].mode()[0])
+
+print("\nDataset after handling missing values:")
+print(df)
+
+
+# 3. Separate Features and Target
+
+X = df[["Fever", "Cough", "AgeGroup"]]
+y = df["Disease"]
+
+# Convert categorical data into numbers
+encoder = OrdinalEncoder()
+X_encoded = encoder.fit_transform(X)
+
+# 4. Split Dataset
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_encoded,
+    y,
+    test_size=0.30,
+    random_state=42,
+    stratify=y
+)
+
+# 5. Naive Bayes WITHOUT smoothing
+
+model_without_smoothing = CategoricalNB(alpha=0)
+
+model_without_smoothing.fit(X_train, y_train)
+
+y_pred_without = model_without_smoothing.predict(X_test)
+
+accuracy_without = accuracy_score(y_test, y_pred_without)
+
+print("\nAccuracy WITHOUT Laplace Smoothing:")
+print(round(accuracy_without * 100, 2), "%")
+
+# 6. Naive Bayes WITH Laplace Smoothing
+
+model_with_smoothing = CategoricalNB(alpha=1.0)
+
+model_with_smoothing.fit(X_train, y_train)
+
+y_pred_with = model_with_smoothing.predict(X_test)
+
+accuracy_with = accuracy_score(y_test, y_pred_with)
+
+print("\nAccuracy WITH Laplace Smoothing:")
+print(round(accuracy_with * 100, 2), "%")
+
+# 7. Confusion Matrix
+
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred_with))
+
+# 8. Predict New Patient
+
+
+new_patient = pd.DataFrame({
+    "Fever": ["Yes"],
+    "Cough": ["Yes"],
+    "AgeGroup": ["Old"]
+})
+
+new_patient_encoded = encoder.transform(new_patient)
+
+prediction = model_with_smoothing.predict(new_patient_encoded)
+
+print("\nNew Patient:")
+print(new_patient)
+
+print("\nPredicted Disease:")
+print(prediction[0])
